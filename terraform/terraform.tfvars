@@ -31,6 +31,8 @@ instance_count = 2
 allow_ssh = [
   "49.228.15.122/32",
   "184.22.43.185/32",
+  "1.46.84.102/32",
+  "35.247.163.10/32"
 ]
 
 key_pair_name = "uat-bastion-host"

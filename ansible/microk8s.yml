@@ -19,25 +19,21 @@
 # Generate Join Command
 # -----------------------------
 - name: Generate join command on master
-  hosts: master
+  hosts: masters
   become: yes
   gather_facts: no
 
   tasks:
-    - name: Get current node count
-      command: microk8s kubectl get nodes --no-headers
-      register: node_list
-      ignore_errors: yes
+    - name: Ensure MicroK8s is ready
+      command: microk8s status --wait-ready
 
-    - name: Generate join command (only if workers not joined)
+    - name: Generate join command
       command: microk8s add-node
       register: join_output
-      when: node_list.stdout_lines | length < 3
 
     - name: Extract join command
       set_fact:
-        join_command: "{{ join_output.stdout_lines | select('search', 'microk8s join') | list | first }}"
-      when: join_output is defined
+        join_command: "{{ join_output.stdout | regex_search('microk8s join .*') }}"
 
 
 # -----------------------------
@@ -49,24 +45,22 @@
   gather_facts: no
 
   tasks:
-    - name: Wait for MicroK8s ready
+    - name: Ensure MicroK8s is ready
       command: microk8s status --wait-ready
 
-    - name: Check if already part of cluster
-      command: microk8s kubectl get nodes
-      register: join_status
-      ignore_errors: yes
-
-    - name: Join cluster
-      command: "{{ hostvars[groups['master'][0]].join_command }}"
-      when: join_status.rc != 0 and hostvars[groups['master'][0]].join_command is defined
+    - name: Join cluster (idempotent)
+      command: "{{ hostvars[groups['masters'][0]].join_command }}"
+      register: join_result
+      failed_when: false
+      changed_when: "'already' not in join_result.stdout"
+      when: hostvars[groups['masters'][0]].join_command is defined
 
 
 # -----------------------------
 # Configure Cluster
 # -----------------------------
 - name: Configure cluster (labels + metrics)
-  hosts: master
+  hosts: masters
   become: yes
   gather_facts: no
 
@@ -74,25 +68,36 @@
     - name: Wait until all nodes are Ready
       command: microk8s kubectl get nodes --no-headers
       register: nodes_output
-      retries: 10
-      delay: 30
+      retries: 15
+      delay: 20
       until: nodes_output.stdout_lines | length >= 3
+
+    # -----------------------------
+    # Get REAL node names (important)
+    # -----------------------------
+    - name: Get all node names
+      command: microk8s kubectl get nodes -o jsonpath='{.items[*].metadata.name}'
+      register: node_names
+
+    - name: Convert node names to list
+      set_fact:
+        all_nodes: "{{ node_names.stdout.split() }}"
+
+    - name: Set master node name
+      set_fact:
+        master_node: "{{ all_nodes[0] }}"
+
+    - name: Set worker nodes
+      set_fact:
+        workers_list: "{{ all_nodes[1:] }}"
 
     # -----------------------------
     # Label Nodes
     # -----------------------------
     - name: Label master node
       command: >
-        microk8s kubectl label node {{ inventory_hostname }}
+        microk8s kubectl label node {{ master_node }}
         node-role=master --overwrite
-
-    - name: Get all node names
-      command: microk8s kubectl get nodes -o jsonpath='{.items[*].metadata.name}'
-      register: node_names
-
-    - name: Extract worker nodes
-      set_fact:
-        workers_list: "{{ node_names.stdout.split() | difference([inventory_hostname]) }}"
 
     - name: Label worker-01
       command: >
@@ -117,7 +122,7 @@
     # -----------------------------
     # Taint Master Node
     # -----------------------------
-    - name: Taint master node (no workload scheduling)
+    - name: Taint master node
       command: >
-        microk8s kubectl taint nodes {{ inventory_hostname }}
+        microk8s kubectl taint nodes {{ master_node }}
         node-role=master:NoSchedule --overwrite
