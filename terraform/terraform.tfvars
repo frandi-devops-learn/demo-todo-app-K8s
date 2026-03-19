@@ -1,0 +1,40 @@
+vpc_name = "demo-todo-app"
+
+instance_tenancy = "default"
+
+enable_dns_hostnames = true
+
+enable_dns_support = true
+
+cidr_block = "10.0.0.0/16"
+
+azs = ["ap-southeast-1a", "ap-southeast-1b"]
+
+vpc_priv_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
+
+priv_name = "demo-todo-priv-subnet"
+
+vpc_pub_subnets = ["10.0.5.0/24", "10.0.6.0/24"]
+
+pub_name = "demo-todo-pub-subnet"
+
+rtb_cidr = "0.0.0.0/0"
+
+rtb_name = "demo-todo"
+
+instance_type = "t3.small"
+
+ami = "ami-014533a88507df1ae"
+
+instance_count = 2
+
+allow_ssh = [
+  "49.228.15.122/32",
+  "184.22.43.185/32",
+]
+
+key_pair_name = "uat-bastion-host"
+
+key_name = "microk8s-key"
+
+public_key_path = "~/.ssh/microk8s.pub"
