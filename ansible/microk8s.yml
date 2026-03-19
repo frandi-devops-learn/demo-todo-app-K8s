@@ -28,7 +28,7 @@
       command: microk8s status --wait-ready
 
     - name: Generate join command
-      command: microk8s add-node
+      command: microk8s add-node --token-ttl 600
       register: join_output
 
     - name: Extract join command
