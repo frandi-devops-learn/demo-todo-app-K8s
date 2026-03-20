@@ -3,7 +3,7 @@ resource "local_file" "ansible_inventory" {
 
   content = <<EOT
 [masters]
-master ansible_host=${aws_instance.master_node_ec2.private_ip}
+master-node ansible_host=${aws_instance.master_node_ec2.private_ip}
 
 [workers]
 worker1 ansible_host=${aws_instance.workers[0].private_ip}
