@@ -17,6 +17,8 @@ resource "aws_instance" "bastion_host" {
     encrypted   = true
   }
 
+  user_data                   = file("${path.module}/scripts/bastion_user_data.sh")
+
   tags = merge(local.common_tags, {
     Name = "demo_bastion"
   })

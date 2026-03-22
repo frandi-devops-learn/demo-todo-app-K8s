@@ -47,6 +47,15 @@ resource "aws_security_group" "nodes_sg" {
     self        = true
   }
 
+  # Allow Kubernetes API from bastion
+  ingress {
+    description     = "Allow Kubernetes API from bastion"
+    from_port       = 16443
+    to_port         = 16443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion_sg.id]
+  }
+
   # Cluster join
   ingress {
     description = "Allow cluster join from master and workers"

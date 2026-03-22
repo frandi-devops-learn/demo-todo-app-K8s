@@ -33,7 +33,7 @@
       command: microk8s add-node --token-ttl 600
       register: join_output
 
-    - name: Extract join command (correct parsing)
+    - name: Extract join command
       set_fact:
         join_command: >-
           {{
@@ -51,8 +51,7 @@
               )
           }}
 
-    - name: Debug join command
-      debug:
+    - debug:
         var: join_command
 
 
@@ -69,7 +68,6 @@
       command: microk8s status --wait-ready
       changed_when: false
 
-    # ✅ FIX: Check from MASTER, not worker
     - name: Check if node already exists in cluster (from master)
       shell: >
         microk8s kubectl get nodes -o wide
@@ -83,7 +81,6 @@
       command: "{{ hostvars[groups['masters'][0]].join_command }}"
       when: node_check.rc != 0
 
-    # ✅ FIX: Verify from MASTER
     - name: Wait for node to appear in cluster (from master)
       shell: >
         microk8s kubectl get nodes -o wide
@@ -97,7 +94,7 @@
 
 
 # =====================================
-# 4. Configure cluster (labels, taint, metrics)
+# 4. Configure Kubernetes cluster
 # =====================================
 - name: Configure Kubernetes cluster
   hosts: masters
@@ -136,7 +133,7 @@
       changed_when: false
 
     # -----------------------------
-    # Map MASTER via IP (correct)
+    # Map MASTER via IP (UNCHANGED)
     # -----------------------------
     - name: Get master node name from IP
       shell: >
@@ -163,30 +160,42 @@
         workers_list: "{{ node_names.stdout.split() | difference([master_node]) }}"
 
     # -----------------------------
-    # Label nodes
+    # Apply STANDARD labels
     # -----------------------------
-    - name: Label master node
+    - name: Label master node (standard)
       command: >
         microk8s kubectl label node {{ master_node }}
-        node-role=master --overwrite
+        node-role.kubernetes.io/control-plane="" --overwrite
 
-    - name: Label worker nodes
+    - name: Label worker nodes (standard)
       command: >
         microk8s kubectl label node {{ item }}
-        node-role=worker --overwrite
+        node-role.kubernetes.io/worker="" --overwrite
       loop: "{{ workers_list }}"
 
     # -----------------------------
-    # Enable metrics server
+    # Enable addons
     # -----------------------------
+    - name: Enable DNS (CoreDNS)
+      command: microk8s enable dns
+      register: dns_result
+      failed_when: false
+      changed_when: "'enabled' in dns_result.stdout"
+
     - name: Enable metrics server
       command: microk8s enable metrics-server
       register: metrics_result
       failed_when: false
       changed_when: "'enabled' in metrics_result.stdout"
 
+    - name: Enable ingress
+      command: microk8s enable ingress
+      register: ingress_result
+      failed_when: false
+      changed_when: "'enabled' in ingress_result.stdout"
+
     # -----------------------------
-    # Apply taint to master
+    # Apply STANDARD taint
     # -----------------------------
     - name: Check existing taints
       command: microk8s kubectl get node {{ master_node }} -o json
@@ -196,8 +205,31 @@
     - name: Apply taint if missing
       command: >
         microk8s kubectl taint nodes {{ master_node }}
-        node-role=master:NoSchedule
-      when: "'node-role=master:NoSchedule' not in taint_check.stdout"
+        node-role.kubernetes.io/control-plane:NoSchedule
+      when: "'node-role.kubernetes.io/control-plane:NoSchedule' not in taint_check.stdout"
+
+    # -----------------------------
+    # Allow ingress on master
+    # -----------------------------
+    - name: Patch ingress to tolerate master taint
+      command: >
+        microk8s kubectl patch daemonset nginx-ingress-microk8s-controller
+        -n ingress
+        --type='json'
+        -p='[
+          {
+            "op": "add",
+            "path": "/spec/template/spec/tolerations",
+            "value": [
+              {
+                "key": "node-role.kubernetes.io/control-plane",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+              }
+            ]
+          }
+        ]'
+      failed_when: false
 
     # -----------------------------
     # Final debug
