@@ -1,13 +1,21 @@
 #!/bin/bash
+set -e  # stop script if any command fails
 
 # Update system
 sudo apt update -y
 sudo apt upgrade -y
 
-curl -LO https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl
+# Install dependencies
+sudo apt install -y curl
 
-sudo install -o ubuntu -g ubuntu -m 0755 kubectl /usr/local/bin/kubectl
+# Install Helm
+sudo snap install helm --classic
 
-echo 'source <(kubectl completion bash)' >>~/.bashrc
+# Install kubectl (latest stable)
+KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
+curl -LO https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
 
-source ~/.bashrc
+install -o ubuntu -g ubuntu -m 0755 kubectl /usr/local/bin/kubectl
+
+# Enable kubectl auto-completion for ubuntu user
+echo 'source <(kubectl completion bash)' >> /home/ubuntu/.bashrc

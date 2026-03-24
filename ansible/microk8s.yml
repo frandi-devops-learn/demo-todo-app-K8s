@@ -188,12 +188,6 @@
       failed_when: false
       changed_when: "'enabled' in metrics_result.stdout"
 
-    - name: Enable ingress
-      command: microk8s enable ingress
-      register: ingress_result
-      failed_when: false
-      changed_when: "'enabled' in ingress_result.stdout"
-
     # -----------------------------
     # Apply STANDARD taint
     # -----------------------------
@@ -207,29 +201,6 @@
         microk8s kubectl taint nodes {{ master_node }}
         node-role.kubernetes.io/control-plane:NoSchedule
       when: "'node-role.kubernetes.io/control-plane:NoSchedule' not in taint_check.stdout"
-
-    # -----------------------------
-    # Allow ingress on master
-    # -----------------------------
-    - name: Patch ingress to tolerate master taint
-      command: >
-        microk8s kubectl patch daemonset nginx-ingress-microk8s-controller
-        -n ingress
-        --type='json'
-        -p='[
-          {
-            "op": "add",
-            "path": "/spec/template/spec/tolerations",
-            "value": [
-              {
-                "key": "node-role.kubernetes.io/control-plane",
-                "operator": "Exists",
-                "effect": "NoSchedule"
-              }
-            ]
-          }
-        ]'
-      failed_when: false
 
     # -----------------------------
     # Final debug

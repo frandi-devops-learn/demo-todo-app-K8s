@@ -25,6 +25,7 @@ resource "aws_subnet" "priv_subnet" {
 
   tags = merge(local.common_tags, {
     Name = "${var.priv_name}-${count.index + 1}"
+    "kubernetes.io/cluster/microk8s-cluster" = "owned"
   })
 }
 
@@ -34,8 +35,12 @@ resource "aws_subnet" "pub_subnet" {
   cidr_block        = var.vpc_pub_subnets[count.index]
   availability_zone = var.azs[count.index]
 
+  map_public_ip_on_launch = true
+
   tags = merge(local.common_tags, {
-    Name = "${var.pub_name}-${count.index + 1}"
+    Name                                     = "${var.pub_name}-${count.index + 1}"
+    "kubernetes.io/role/elb"                 = "1"
+    "kubernetes.io/cluster/microk8s-cluster" = "owned"
   })
 }
 

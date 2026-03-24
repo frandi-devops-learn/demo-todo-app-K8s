@@ -41,3 +41,37 @@ key_pair_name = "uat-bastion-host"
 key_name = "microk8s-key"
 
 public_key_path = "~/.ssh/microk8s.pub"
+
+rds_priv = "demo-rds-subnet"
+
+db_name = "uatdb"
+
+rds_name = "demo-todo-rds"
+
+engine = "postgres"
+
+engine_version = "16.11"
+
+db_class = "db.t4g.micro"
+
+user = "dbadmin"
+
+db_password = "DBadmin123"
+
+encrypt = true
+
+storage_type = "gp3"
+
+storage = "20"
+
+multi = false
+
+skip = true
+
+final = false
+
+apply = true
+
+max = "50"
+
+rds_sg = "demo-todo-rds-sg"

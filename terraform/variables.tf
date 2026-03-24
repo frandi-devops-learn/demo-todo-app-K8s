@@ -84,10 +84,96 @@ variable "allow_ssh" {
 
 variable "key_name" {
   description = "key name for bastion host"
-  type = string
+  type        = string
 }
 
 variable "public_key_path" {
   description = "Path to the public key file for the bastion host"
-  type = string
+  type        = string
+}
+
+variable "rds_priv" {
+  type        = string
+  description = "Private subnet for RDS"
+}
+
+variable "rds_name" {
+  type        = string
+  description = "RDS Name"
+}
+
+variable "db_name" {
+  type        = string
+  description = "DB Name"
+}
+
+variable "engine" {
+  type        = string
+  description = "RDS Engine"
+}
+
+variable "engine_version" {
+  type        = string
+  description = "RDS Engine Version"
+}
+
+variable "db_class" {
+  type        = string
+  description = "RDS Class"
+}
+
+variable "user" {
+  type        = string
+  description = "RDS User Name"
+}
+
+variable "encrypt" {
+  type        = bool
+  description = "Storage Encrypt for RDS"
+}
+
+variable "storage_type" {
+  type        = string
+  description = "Storage Type for RDS"
+}
+
+variable "storage" {
+  type        = string
+  description = "Total Storage size for RDS"
+}
+
+variable "multi" {
+  type        = string
+  description = "Multi AZs for RDS"
+}
+
+variable "skip" {
+  type        = string
+  description = "Skip Snapshot for RDS"
+}
+
+variable "final" {
+  type        = string
+  description = "Final Snapshot for RDS"
+}
+
+variable "apply" {
+  type        = string
+  description = "Apply immediately for RDS"
+}
+
+variable "max" {
+  type        = string
+  description = "Max Storage for RDS"
+}
+
+variable "db_password" {
+  type        = string
+  description = "Password for RDS database"
+  sensitive   = true
+}
+
+variable "rds_sg" {
+  type        = string
+  description = "Security Group for RDS"
 }
