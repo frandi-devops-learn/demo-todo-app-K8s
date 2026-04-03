@@ -1,0 +1,220 @@
+# =====================================
+# 1. Wait for MicroK8s on all nodes
+# =====================================
+- name: Wait for MicroK8s to be ready on all nodes
+  hosts: all
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Wait until MicroK8s is running
+      shell: microk8s status | grep -i "running"
+      register: microk8s_status
+      retries: 20
+      delay: 10
+      until: microk8s_status.rc == 0
+      changed_when: false
+
+
+# =====================================
+# 2. Generate join command on master
+# =====================================
+- name: Generate join command
+  hosts: masters
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Ensure MicroK8s is ready
+      command: microk8s status --wait-ready
+      changed_when: false
+
+    - name: Generate join command
+      command: microk8s add-node --token-ttl 600
+      register: join_output
+
+    - name: Extract join command
+      set_fact:
+        join_command: >-
+          {{
+            (
+              join_output.stdout_lines
+              | select('match', '^microk8s join .*--worker.*')
+              | list
+              | first
+            )
+            | default(
+                join_output.stdout_lines
+                | select('match', '^microk8s join .*')
+                | list
+                | first
+              )
+          }}
+
+    - debug:
+        var: join_command
+
+
+# =====================================
+# 3. Join worker nodes
+# =====================================
+- name: Join workers to cluster
+  hosts: workers
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Ensure MicroK8s is ready
+      command: microk8s status --wait-ready
+      changed_when: false
+
+    - name: Check if node already exists in cluster (from master)
+      shell: >
+        microk8s kubectl get nodes -o wide
+        | grep "{{ ansible_host }}"
+      register: node_check
+      failed_when: false
+      changed_when: false
+      delegate_to: "{{ groups['masters'][0] }}"
+
+    - name: Join cluster (only if not joined)
+      command: "{{ hostvars[groups['masters'][0]].join_command }}"
+      when: node_check.rc != 0
+
+    - name: Wait for node to appear in cluster (from master)
+      shell: >
+        microk8s kubectl get nodes -o wide
+        | grep "{{ hostvars[inventory_hostname].ansible_host }}"
+      register: node_visible
+      retries: 15
+      delay: 15
+      until: node_visible.rc == 0
+      changed_when: false
+      delegate_to: "{{ groups['masters'][0] }}"
+
+
+# =====================================
+# 4. Configure Kubernetes cluster
+# =====================================
+- name: Configure Kubernetes cluster
+  hosts: masters
+  become: yes
+  gather_facts: no
+
+  tasks:
+    # -----------------------------
+    # Debug nodes
+    # -----------------------------
+    - name: Show node status (before)
+      command: microk8s kubectl get nodes -o wide
+      register: nodes_before
+      changed_when: false
+
+    - debug:
+        var: nodes_before.stdout_lines
+
+    # -----------------------------
+    # Wait until all nodes Ready
+    # -----------------------------
+    - name: Count expected nodes
+      set_fact:
+        expected_nodes: "{{ groups['all'] | length }}"
+
+    - name: Wait until all nodes are Ready
+      shell: microk8s kubectl get nodes --no-headers
+      register: node_status
+      retries: 20
+      delay: 15
+      until: >
+        node_status.stdout_lines
+        | select('search', ' Ready ')
+        | list
+        | length >= expected_nodes
+      changed_when: false
+
+    # -----------------------------
+    # Map MASTER via IP (UNCHANGED)
+    # -----------------------------
+    - name: Get master node name from IP
+      shell: >
+        microk8s kubectl get nodes -o wide
+        | grep "{{ ansible_host }}"
+        | awk '{print $1}'
+      register: master_name
+      changed_when: false
+
+    - name: Set master node fact
+      set_fact:
+        master_node: "{{ master_name.stdout }}"
+
+    # -----------------------------
+    # Get all nodes
+    # -----------------------------
+    - name: Get all node names
+      command: microk8s kubectl get nodes -o jsonpath='{.items[*].metadata.name}'
+      register: node_names
+      changed_when: false
+
+    - name: Set worker node list
+      set_fact:
+        workers_list: "{{ node_names.stdout.split() | difference([master_node]) }}"
+
+    # -----------------------------
+    # Apply STANDARD labels
+    # -----------------------------
+    - name: Label master node (standard)
+      command: >
+        microk8s kubectl label node {{ master_node }}
+        node-role.kubernetes.io/control-plane="" --overwrite
+
+    - name: Label worker nodes (standard)
+      command: >
+        microk8s kubectl label node {{ item }}
+        node-role.kubernetes.io/worker="" --overwrite
+      loop: "{{ workers_list }}"
+
+    # -----------------------------
+    # Enable addons
+    # -----------------------------
+    - name: Enable DNS (CoreDNS)
+      command: microk8s enable dns
+      register: dns_result
+      failed_when: false
+      changed_when: "'enabled' in dns_result.stdout"
+
+    - name: Enable hostpath-storage
+      command: microk8s enable hostpath-storage
+      register: hostpath_result
+      failed_when: false
+      changed_when: "'enabled' in hostpath_result.stdout"
+
+    - name: Enable metrics server
+      command: microk8s enable metrics-server
+      register: metrics_result
+      failed_when: false
+      changed_when: "'enabled' in metrics_result.stdout"
+
+    # -----------------------------
+    # Apply STANDARD taint
+    # -----------------------------
+    - name: Check existing taints
+      command: microk8s kubectl get node {{ master_node }} -o json
+      register: taint_check
+      changed_when: false
+
+    - name: Apply taint if missing
+      command: >
+        microk8s kubectl taint nodes {{ master_node }}
+        node-role.kubernetes.io/control-plane:NoSchedule
+      when: "'node-role.kubernetes.io/control-plane:NoSchedule' not in taint_check.stdout"
+
+    # -----------------------------
+    # Final debug
+    # -----------------------------
+    - name: Show final node status
+      command: microk8s kubectl get nodes --show-labels
+      register: final_nodes
+      changed_when: false
+
+    - debug:
+        var: final_nodes.stdout_lines

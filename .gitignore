@@ -1,0 +1,13 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+terraform/.terraform
+terraform/.terraform.lock.hcl
+
+# Sensitive variable files
+*.auto.tfvars
+
+ansible/inventory.ini
