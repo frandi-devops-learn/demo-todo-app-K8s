@@ -23,6 +23,10 @@
 
 2.7. helm upgrade --install argocd-image-updater argo/argocd-image-updater -n argocd -f values.yaml
 
+2.8. kubectl apply -f image-updater.yaml
+
+2.9. kubectl logs -n argocd deploy/argocd-image-updater-controller
+
 ---------------
 
 # Install sealed secret
