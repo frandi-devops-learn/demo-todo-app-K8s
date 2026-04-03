@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
       - name: demo-todo-app
-        image: zinlinhtetdevops/demo-todo-app:initial
+        image: zinlinhtetdevops/demo-todo-app:latest
         imagePullPolicy: Always
 
         ports:

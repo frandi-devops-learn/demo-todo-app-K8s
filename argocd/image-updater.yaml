@@ -8,7 +8,7 @@ spec:
   interval: 2m
 
   images:
-    - name: docker.io/frandisharing/demo-todo-app
+    - name: docker.io/zinlinhtetdevops/demo-todo-app
       updateStrategy: newest-build
       allowTags: regexp:^[a-f0-9]{40}$
 
