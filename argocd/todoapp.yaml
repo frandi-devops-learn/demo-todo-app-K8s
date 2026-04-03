@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: demo-todo-app
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: todo-app=docker.io/frandisharing/demo-todo-app
+    argocd-image-updater.argoproj.io/todo-app.update-strategy: latest
+    argocd-image-updater.argoproj.io/todo-app.helm.image-name: image.repository
+    argocd-image-updater.argoproj.io/todo-app.helm.image-tag: image.tag
+    argocd-image-updater.argoproj.io/write-back-method: git
 spec:
   project: default
   source:
