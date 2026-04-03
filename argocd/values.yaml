@@ -1,0 +1,18 @@
+config:
+  registries:
+    - name: Docker Hub
+      prefix: docker.io
+      api_url: https://registry-1.docker.io
+      credentials: pullsecret:argocd/dockerhub-secret
+
+  git:
+    credentials: secret:argocd/git-creds
+
+extraArgs:
+  - --loglevel=info
+
+rbac:
+  enabled: true
+
+serviceAccount:
+  create: true

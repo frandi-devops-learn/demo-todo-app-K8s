@@ -16,6 +16,13 @@
 2.3. kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 
 2.4. helm install argocd-image-updater argo/argocd-image-updater --namespace argocd
+
+2.5. kubectl create secret docker-registry dockerhub-secret --docker-username=YOUR_USERNAME --docker-password=YOUR_TOKEN --docker-email=YOUR_EMAIL -n argocd
+
+2.6. kubectl create secret generic git-creds --from-literal=username=YOUR_GITHUB_USERNAME --from-literal=password=YOUR_GITHUB_TOKEN -n argocd
+
+2.7. helm upgrade --install argocd-image-updater argo/argocd-image-updater -n argocd -f values.yaml
+
 ---------------
 
 # Install sealed secret
