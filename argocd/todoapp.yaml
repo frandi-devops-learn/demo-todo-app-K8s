@@ -5,9 +5,11 @@ metadata:
   namespace: argocd
   annotations:
     argocd-image-updater.argoproj.io/image-list: todo-app=docker.io/zinlinhtetdevops/demo-todo-app
-    argocd-image-updater.argoproj.io/todo-app.update-strategy: newest-build
+    argocd-image-updater.argoproj.io/git-branch: main
+    argocd-image-updater.argoproj.io/todo-app.update-strategy: name
     argocd-image-updater.argoproj.io/todo-app.allow-tags: regexp:^[a-f0-9]+$
     argocd-image-updater.argoproj.io/write-back-method: git
+    argocd-image-updater.argoproj.io/write-back-target: file:manifests/app/deploy.yml
     argocd-image-updater.argoproj.io/git-credentials: secret:argocd/git-creds
 spec:
   project: default
