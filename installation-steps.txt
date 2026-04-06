@@ -42,12 +42,6 @@
 
 ---------------
 
-# Install ArgoCD Image Updater
-
-4. helm install argocd-image-updater argo/argocd-image-updater -n argocd
-
----------------
-
 # Install vault
 4. helm repo add hashicorp https://helm.releases.hashicorp.com
 
