@@ -10,8 +10,9 @@ spec:
         - alias: "todo-app"
           imageName: "docker.io/zinlinhtetdevops/demo-todo-app"
           commonUpdateSettings:
-            updateStrategy: "name"
+            updateStrategy: "alphabetical"
             allowTags: "regexp:^[a-f0-9]+$"
+            ignoreInvalidTags: true
       writeBackConfig:
         method: "git:secret:argocd/git-creds"
         gitConfig:
