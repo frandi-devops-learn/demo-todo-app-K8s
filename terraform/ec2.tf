@@ -17,7 +17,7 @@ resource "aws_instance" "bastion_host" {
     encrypted   = true
   }
 
-  user_data = file("${path.module}/scripts/bastion_user_data.sh")
+  user_data                   = file("${path.module}/scripts/bastion_user_data.sh")
   user_data_replace_on_change = false
 
   tags = merge(local.common_tags, {
@@ -41,7 +41,7 @@ resource "aws_instance" "master_node_ec2" {
 
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
-  user_data = file("${path.module}/scripts/ec2_user_data.sh")
+  user_data                   = file("${path.module}/scripts/ec2_user_data.sh")
   user_data_replace_on_change = false
 
   tags = merge(local.common_tags, {
