@@ -23,7 +23,9 @@
 
 2.7. kubectl create secret generic git-creds --from-literal=username=YOUR_GITHUB_USERNAME --from-literal=password=YOUR_GITHUB_TOKEN -n argocd
 
-2.8. kubectl logs -n argocd deploy/argocd-image-updater-controller
+2.8. helm upgrade argocd-image-updater argo/argocd-image-updater -n argocd -f values.yaml
+
+2.9. kubectl logs -n argocd deploy/argocd-image-updater-controller
 
 ---------------
 
