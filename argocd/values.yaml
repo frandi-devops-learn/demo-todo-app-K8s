@@ -6,3 +6,10 @@ config:
       credentials: secret:argocd/dockerhub-secret
       default: true
       defaultns: zinlinhtetdevops
+
+rbac:
+  enabled: true
+
+serviceAccount:
+  create: true
+  name: argocd-image-updater
