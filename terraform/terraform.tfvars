@@ -22,9 +22,9 @@ rtb_cidr = "0.0.0.0/0"
 
 rtb_name = "demo-todo"
 
-#instance_type = "c7i-flex.large"
+instance_type = "c7i-flex.large"
 
-instance_type = "t3.small"
+# instance_type = "t3.small"
 
 ami = "ami-014533a88507df1ae"
 
@@ -33,10 +33,7 @@ instance_count = 2
 allow_ssh = [
   "49.228.15.122/32",
   "184.22.109.144/32",
-  "184.22.109.153/32",
-  "184.22.43.185/32",
-  "184.22.108.220/32",
-  "184.22.110.248/32"
+  "184.22.109.225/32"
 ]
 
 key_pair_name = "uat-bastion-host"
